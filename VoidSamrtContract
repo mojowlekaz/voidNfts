@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "https://github.com/1001-digital/erc721-extensions/blob/main/contracts/RandomlyAssigned.sol";
+
+contract NFT is ERC721, Ownable {
+    using Strings for uint256;
+
+    uint public constant MAX_TOKENS = 3333;
+    uint private constant TOKENS_RESERVED = 10;
+    uint public price = 18400000000000000;
+    uint public price_for_whitelist = 18400000000000000;
+    uint public price_for_OG = 18400000000000000;
+    uint public price_for_specialNfts = 3000000000000000;
+    uint256 public constant MAX_MINT_PER_TX = 10;
+    uint256 public MAX_MINT_PER_WALLET = 10;
+    bool public isSaleActive;
+    bool public isWhitelistActive = false;
+    uint256 public totalSupply;
+    mapping(address => uint256) private mintedPerWallet;
+    mapping(address => bool) public whitelist;
+    mapping(address => bool) public OGlist;
+    string public baseUri;
+    string public baseExtension = ".json";
+
+    constructor() ERC721("VoidFeathers", "Void") {
+        baseUri = "ipfs://bafybeid2kqefjbd2kp4hozar4e2evtflqgykajs42uxeocs3ri4ieajzaa/";
+        for(uint256 i = 1; i <= TOKENS_RESERVED; ++i) {
+            _safeMint(msg.sender, i);
+        }
+        totalSupply = TOKENS_RESERVED;
+    }
+
+
+    function UpdatePrice(uint256 _suuply) internal pure returns(uint256 _price){
+        if(_suuply < 550 ){
+            return 1000000000000000;
+        }
+        if(_suuply < 990 ){
+            return 2000000000000000;
+        }
+        if(_suuply < 1320 ){
+            return 2000000000000000;
+        }
+                if(_suuply < 1320 ){
+            return 2000000000000000;
+        }
+                if(_suuply < 1320 ){
+            return 2000000000000000;
+        }
+                if(_suuply < 1320 ){
+            return 2000000000000000;
+        }
+                if(_suuply < 1320 ){
+            return 2000000000000000;
+        }
+    }
+    // Public Functions
+    function mint(uint256 _numTokens) external payable {
+        require(isSaleActive, "The sale is paused.");
+        require(_numTokens <= MAX_MINT_PER_TX, "You cannot mint that many in one transaction.");
+        require(mintedPerWallet[msg.sender] + _numTokens <= MAX_MINT_PER_TX, "You cannot mint that many total.");
+        uint256 curTotalSupply = totalSupply;
+        require(curTotalSupply + _numTokens <= MAX_TOKENS, "Exceeds total supply.");
+        require(_numTokens * price <= msg.value, "Insufficient funds.");
+
+        for(uint256 i = 1; i <= _numTokens; ++i) {
+            _safeMint(msg.sender, curTotalSupply + i);
+        }
+        mintedPerWallet[msg.sender] += _numTokens;  
+        totalSupply += _numTokens;
+        }
+
+        function setWhiteList(address[] calldata addresses) external onlyOwner{
+            for(uint256 i=0; i < addresses.length; i++){
+                whitelist[addresses[i]] = true;
+            }
+        }
+    
+        function whitelistMint(uint256 _numTokens) external payable {
+        require(isSaleActive, "The sale is paused.");
+        require(whitelist[msg.sender], "You are not whitelisted");
+        require(_numTokens <= MAX_MINT_PER_TX, "You cannot mint that many in one transaction.");
+        require(mintedPerWallet[msg.sender] + _numTokens <= MAX_MINT_PER_TX, "You cannot mint that many total.");
+        uint256 curTotalSupply = totalSupply;
+        require(curTotalSupply + _numTokens <= MAX_TOKENS, "Exceeds total supply.");
+        require(_numTokens * price_for_whitelist <= msg.value, "Insufficient funds.");
+
+        for(uint256 i = 1; i <= _numTokens; ++i) {
+            _safeMint(msg.sender, curTotalSupply + i);
+        }
+        mintedPerWallet[msg.sender] += _numTokens;  
+        totalSupply += _numTokens;
+        }
+
+        function OgList(uint256 _numTokens) external payable {
+        require(isSaleActive, "The sale is paused.");
+        require(OGlist[msg.sender], "You are not on the OGlist");
+        require(_numTokens <= MAX_MINT_PER_TX, "You cannot mint that many in one transaction.");
+        require(mintedPerWallet[msg.sender] + _numTokens <= MAX_MINT_PER_TX, "You cannot mint that many total.");
+        uint256 curTotalSupply = totalSupply;
+        require(curTotalSupply + _numTokens <= MAX_TOKENS, "Exceeds total supply.");
+        require(_numTokens * price_for_OG <= msg.value, "Insufficient funds.");
+
+        for(uint256 i = 1; i <= _numTokens; ++i) {
+            _safeMint(msg.sender, curTotalSupply + i);
+        }
+        mintedPerWallet[msg.sender] += _numTokens;  
+        totalSupply += _numTokens;
+        }
+
+
+    // Owner-only functions
+    function flipSaleState() external onlyOwner {
+        isSaleActive = !isSaleActive;
+    }
+
+    function setBaseUri(string memory _baseUri) external onlyOwner {
+        baseUri = _baseUri;
+    }
+
+    function setPrice(uint256 _price) external onlyOwner {
+        price = _price;
+    }
+
+    function withdrawAll() external payable onlyOwner {
+        uint256 balance = address(this).balance;
+        uint256 balanceOne = balance * 100 / 100;
+        // uint256 balanceTwo = balance * 30 / 100;
+        ( bool transferOne, ) = payable(0x0609eFD6f074d55aEF650E62BECe8D4d29a9C146).call{value: balanceOne}("");
+        // ( bool transferTwo, ) = payable(0x7ceB3cAf7cA83D837F9d04c59f41a92c1dC71C7d).call{value: balanceTwo}("");
+        require(transferOne, "Transfer failed.");
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+ 
+        string memory currentBaseURI = _baseURI();
+        return bytes(currentBaseURI).length > 0
+            ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), baseExtension))
+            : "";
+    }
+ 
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseUri;
+    }
+
+    function getTelegramLink() public pure returns(string memory){
+        return 'https://t.me/+vE-EqWE7_4M5NmUx';
+    }
+}
