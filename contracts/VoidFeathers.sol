@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "https://github.com/1001-digital/erc721-extensions/blob/main/contracts/RandomlyAssigned.sol";
+
 
 contract NFT is ERC721, Ownable {
     using Strings for uint256;
@@ -126,15 +126,16 @@ contract NFT is ERC721, Ownable {
         price = _price;
     }
 
-    function withdrawAll() external payable onlyOwner {
-        uint256 balance = address(this).balance;
-        uint256 balanceOne = balance * 100 / 100;
-        // uint256 balanceTwo = balance * 30 / 100;
-        ( bool transferOne, ) = payable(0x0609eFD6f074d55aEF650E62BECe8D4d29a9C146).call{value: balanceOne}("");
-        // ( bool transferTwo, ) = payable(0x7ceB3cAf7cA83D837F9d04c59f41a92c1dC71C7d).call{value: balanceTwo}("");
-        require(transferOne, "Transfer failed.");
-    }
-
+    function withdrawAll(address payable recipientOne, address payable recipientTwo) external onlyOwner {
+    require(recipientOne != address(0) && recipientTwo != address(0), "Invalid recipient address.");
+    uint256 balance = address(this).balance;
+    require(balance > 0, "No balance to withdraw.");
+    uint256 balanceOne = balance / 2;
+    uint256 balanceTwo = balance - balanceOne;
+    (bool successOne, ) = recipientOne.call{value: balanceOne}("");
+    (bool successTwo, ) = recipientTwo.call{value: balanceTwo}("");
+    require(successOne && successTwo, "Transfer failed.");
+}
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
  
